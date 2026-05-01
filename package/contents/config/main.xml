@@ -7,5 +7,13 @@
     <Entry key="paletteIndex" type="Int"><Default>0</Default></Entry>
     <Entry key="jitter" type="Double"><Default>0.0</Default></Entry>
     <Entry key="glitchChance" type="Int"><Default>1</Default><Range min="0" max="100"/></Entry>
+    <Entry key="fontFamily" type="String"><Default>monospace</Default></Entry>
+    <Entry key="charSetMask" type="Int"><Default>1</Default></Entry>
+    <Entry key="trailLength" type="Int"><Default>20</Default><Range min="2" max="60"/></Entry>
+    <Entry key="density" type="Int"><Default>100</Default><Range min="1" max="100"/></Entry>
+    <Entry key="leadHighlight" type="Bool"><Default>false</Default></Entry>
+    <Entry key="bgColor" type="String"><Default>#000000</Default></Entry>
+    <Entry key="direction" type="Int"><Default>0</Default></Entry>
+    <Entry key="varSpeed" type="Bool"><Default>false</Default></Entry>
   </Group>
 </Config>
