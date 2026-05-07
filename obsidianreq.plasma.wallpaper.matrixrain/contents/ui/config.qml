@@ -7,21 +7,25 @@ import org.kde.kirigami.layouts 2.0 as KirigamiLayouts
 KirigamiLayouts.FormLayout {
     anchors.fill: parent
 
-    property alias cfg_fontSize:      fontSpin.value
-    property alias cfg_speed:         speedSpin.value
-    property alias cfg_colorMode:     modeCombo.currentIndex
-    property alias cfg_singleColor:   colorField.text
-    property alias cfg_paletteIndex:  paletteCombo.currentIndex
-    property alias cfg_jitter:        jitterSpin.value
-    property alias cfg_glitchChance:  glitchSpin.value
-    property alias cfg_trailLength:   trailSpin.value
-    property alias cfg_density:       densitySpin.value
-    property alias cfg_leadHighlight: leadCheck.checked
-    property alias cfg_direction:     dirCombo.currentIndex
-    property alias cfg_varSpeed:      varSpeedCheck.checked
-    property alias cfg_bgColor:       bgColorField.text
-    property string cfg_fontFamily:   configuration.fontFamily !== undefined ? configuration.fontFamily : "monospace"
-    property int    cfg_charSetMask:  configuration.charSetMask !== undefined ? configuration.charSetMask : 1
+    property alias cfg_fontSize:        fontSpin.value
+    property alias cfg_speed:           speedSpin.value
+    property alias cfg_colorMode:       modeCombo.currentIndex
+    property alias cfg_singleColor:     colorField.text
+    property alias cfg_paletteIndex:    paletteCombo.currentIndex
+    property alias cfg_jitter:          jitterSpin.value
+    property alias cfg_glitchChance:    glitchSpin.value
+    property alias cfg_trailLength:     trailMaxSpin.value
+    property alias cfg_trailLengthMin:  trailMinSpin.value
+    property alias cfg_density:         densitySpin.value
+    property alias cfg_leadHighlight:   leadCheck.checked
+    property alias cfg_glowSize:        glowSpin.value
+    property alias cfg_direction:       dirCombo.currentIndex
+    property alias cfg_varSpeed:        varSpeedCheck.checked
+    property alias cfg_dropsPerColumn:  dropsSpin.value
+    property alias cfg_restartDelay:    restartSpin.value
+    property alias cfg_bgColor:         bgColorField.text
+    property string cfg_fontFamily:     configuration.fontFamily  !== undefined ? configuration.fontFamily  : "monospace"
+    property int    cfg_charSetMask:    configuration.charSetMask !== undefined ? configuration.charSetMask : 1
 
     // --- Text / character appearance ---
 
@@ -32,15 +36,19 @@ KirigamiLayouts.FormLayout {
     }
     QC.ComboBox {
         id: fontCombo
-        model: Qt.fontFamilies()
+        // Cache as a JS array so indexOf is reliable — calling indexOf on the
+        // ComboBox's wrapped model returned -1 even for present families.
+        property var fontList: Qt.fontFamilies()
+        model: fontList
         onActivated: function(idx) {
-            cfg_fontFamily = model[idx]
-            configuration.fontFamily = model[idx]
+            cfg_fontFamily = fontList[idx]
+            configuration.fontFamily = fontList[idx]
         }
-        Component.onCompleted: {
-            var idx = model.indexOf(configuration.fontFamily || "monospace")
+        Component.onCompleted: Qt.callLater(function() {
+            var fam = cfg_fontFamily || configuration.fontFamily || "monospace"
+            var idx = fontList.indexOf(fam)
             currentIndex = idx >= 0 ? idx : 0
-        }
+        })
         KirigamiLayouts.FormData.label: qsTr("Font")
     }
     ColumnLayout {
@@ -78,9 +86,16 @@ KirigamiLayouts.FormLayout {
         }
     }
     QC.SpinBox {
-        id: trailSpin; from: 2; to: 60; stepSize: 1; value: configuration.trailLength !== undefined ? configuration.trailLength : 20
+        id: trailMaxSpin; from: 2; to: 60; stepSize: 1
+        value: configuration.trailLength !== undefined ? configuration.trailLength : 20
         onValueChanged: configuration.trailLength = value
-        KirigamiLayouts.FormData.label: qsTr("Trail Length")
+        KirigamiLayouts.FormData.label: qsTr("Trail Max")
+    }
+    QC.SpinBox {
+        id: trailMinSpin; from: 2; to: 60; stepSize: 1
+        value: configuration.trailLengthMin !== undefined ? configuration.trailLengthMin : 5
+        onValueChanged: configuration.trailLengthMin = value
+        KirigamiLayouts.FormData.label: qsTr("Trail Min")
     }
     QC.CheckBox {
         id: leadCheck
@@ -88,6 +103,12 @@ KirigamiLayouts.FormLayout {
         checked: configuration.leadHighlight !== undefined ? configuration.leadHighlight : false
         onCheckedChanged: configuration.leadHighlight = checked
         KirigamiLayouts.FormData.label: qsTr("Lead Highlight")
+    }
+    QC.SpinBox {
+        id: glowSpin; from: 0; to: 30; stepSize: 1
+        value: configuration.glowSize !== undefined ? configuration.glowSize : 0
+        onValueChanged: configuration.glowSize = value
+        KirigamiLayouts.FormData.label: qsTr("Glow")
     }
 
     // --- Motion ---
@@ -105,9 +126,22 @@ KirigamiLayouts.FormLayout {
         KirigamiLayouts.FormData.label: qsTr("Direction")
     }
     QC.SpinBox {
-        id: densitySpin; from: 1; to: 100; stepSize: 1; value: configuration.density !== undefined ? configuration.density : 100
+        id: densitySpin; from: 1; to: 100; stepSize: 1
+        value: configuration.density !== undefined ? configuration.density : 100
         onValueChanged: configuration.density = value
         KirigamiLayouts.FormData.label: qsTr("Density (%)")
+    }
+    QC.SpinBox {
+        id: dropsSpin; from: 1; to: 4; stepSize: 1
+        value: configuration.dropsPerColumn !== undefined ? configuration.dropsPerColumn : 1
+        onValueChanged: configuration.dropsPerColumn = value
+        KirigamiLayouts.FormData.label: qsTr("Drops / Column")
+    }
+    QC.SpinBox {
+        id: restartSpin; from: 0; to: 100; stepSize: 1
+        value: configuration.restartDelay !== undefined ? configuration.restartDelay : 0
+        onValueChanged: configuration.restartDelay = value
+        KirigamiLayouts.FormData.label: qsTr("Restart Delay")
     }
     QC.CheckBox {
         id: varSpeedCheck
@@ -153,7 +187,8 @@ KirigamiLayouts.FormLayout {
         KirigamiLayouts.FormData.label: qsTr("Glitch Chance (%)")
     }
     QC.TextField {
-        id: bgColorField; text: configuration.bgColor !== undefined ? configuration.bgColor : "#000000"
+        id: bgColorField
+        text: configuration.bgColor !== undefined ? configuration.bgColor : "#000000"
         onTextChanged: configuration.bgColor = text
         KirigamiLayouts.FormData.label: qsTr("Background Color")
     }
