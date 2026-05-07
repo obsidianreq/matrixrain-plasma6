@@ -21,7 +21,7 @@ package on arch based distros, `kpackagetool6` on Suse based distros, and
 ```bash
 git clone https://github.com/obsidianreq/matrixrain-plasma6.git
 cd matrixrain-plasma6
-kpackagetool6 --type Plasma/Wallpaper --install package/
+kpackagetool6 --type Plasma/Wallpaper --install obsidianreq.plasma.wallpaper.matrixrain/
 kquitapp6 plasmashell && kstart plasmashell
 ```
 
