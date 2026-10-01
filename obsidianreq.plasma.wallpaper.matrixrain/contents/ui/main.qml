@@ -17,6 +17,7 @@ WallpaperItem {
     property int charSetMask:    main.configuration.charSetMask    !== undefined ? main.configuration.charSetMask    : 1
     property int trailLength:    main.configuration.trailLength    !== undefined ? main.configuration.trailLength    : 20
     property int trailLengthMin: main.configuration.trailLengthMin !== undefined ? main.configuration.trailLengthMin : 5
+    property int fadeStep:       main.configuration.fadeStep       !== undefined ? main.configuration.fadeStep       : 10
     property int density:        main.configuration.density        !== undefined ? main.configuration.density        : 100
     property bool leadHighlight: main.configuration.leadHighlight  !== undefined ? main.configuration.leadHighlight  : false
     property int glowSize:       main.configuration.glowSize       !== undefined ? main.configuration.glowSize       : 0
@@ -75,6 +76,8 @@ WallpaperItem {
         property var columnActive: []
         property var columnTrailLengths: []
         property bool needsClear: true
+        // Frames of fade accumulated since the last destination-out fill.
+        property int fadeAcc: 0
 
         function columnCount() {
             return main.direction <= 1
@@ -121,6 +124,7 @@ WallpaperItem {
                     : tMin + Math.floor(Math.random() * (tMax - tMin + 1)))
             }
             needsClear = true
+            fadeAcc = 0
         }
 
         Timer {
@@ -152,30 +156,51 @@ WallpaperItem {
             var palLen = palArr.length
             var single = main.singleColor
             var tMax   = Math.max(2, main.trailLength)
+            var fadeMin = Math.min(0.5, Math.max(0.01, main.fadeStep / 100))
 
-            // Fade alpha controls how long previously-painted glyphs persist on
-            // the canvas. Tuned so trails reach near-invisibility around 1.5x
-            // the configured max trail length; the per-column wipe truncates
-            // any column whose colTrailLen is shorter than that.
-            var fadeAlpha = 1.5 / tMax
+            // Per-frame fade controls how long previously-painted glyphs
+            // persist on the canvas. Tuned so trails reach near-invisibility
+            // around 1.5x the configured max trail length; the per-column wipe
+            // truncates any column whose colTrailLen is shorter than that.
+            var fadeRow = 1.5 / tMax
 
             if (needsClear) {
                 ctx.clearRect(0, 0, w, h)
                 needsClear = false
+                fadeAcc = 0
             }
 
             // Fade by reducing destination alpha rather than painting opaque
             // bg: keeps the canvas transparent so the bg Rectangle shows
             // through and so the MultiEffect glow has glyph-shaped alpha to
             // work with.
-            ctx.globalCompositeOperation = "destination-out"
-            ctx.globalAlpha = fadeAlpha
-            ctx.fillStyle = "#000"
-            ctx.fillRect(0, 0, w, h)
-            ctx.globalCompositeOperation = "source-over"
-            ctx.globalAlpha = 1.0
+            //
+            // The canvas stores 8-bit alpha and Qt rounds to nearest, so a
+            // fade of f applied to a pixel with alpha A does nothing once
+            // A * f < 0.5/255. With long trails f is small (0.025 at tMax 60)
+            // and dim pixels stall at ~20/255 instead of reaching black
+            // (GitHub issue #6). Accumulate the fade across frames and apply
+            // it only once it is at least fadeMin, which bounds the residue
+            // at roughly 0.5 / fadeMin (about 4/255 for the default 10%).
+            // Larger fadeMin = darker residue but coarser fade steps.
+            fadeAcc += 1
+            var fadeNow = 1 - Math.pow(1 - fadeRow, fadeAcc)
+            if (fadeNow >= fadeMin) {
+                ctx.globalCompositeOperation = "destination-out"
+                ctx.globalAlpha = fadeNow
+                ctx.fillStyle = "#000"
+                ctx.fillRect(0, 0, w, h)
+                ctx.globalCompositeOperation = "source-over"
+                ctx.globalAlpha = 1.0
+                fadeAcc = 0
+            }
 
-            ctx.font = sz + "px " + main.fontFamily
+            // CSS font shorthand: a family name with spaces must be quoted or
+            // Qt either resolves it to the wrong generic family or rejects the
+            // whole declaration and keeps the 10px default (GitHub issue #5).
+            // The generic fallback covers a configured font that is not
+            // installed, which would otherwise also be rejected.
+            ctx.font = sz + "px \"" + main.fontFamily + "\", monospace"
 
             for (var i = 0; i < drops.length; i++) {
                 if (!columnActive[i]) continue
@@ -314,7 +339,6 @@ WallpaperItem {
     }
 
     onFontSizeChanged:       { canvas.initDrops(); canvas.requestPaint() }
-    onSpeedChanged:          timer.interval = 1000 / main.speed
     onColorModeChanged:      canvas.requestPaint()
     onSingleColorChanged:    canvas.requestPaint()
     onPaletteIndexChanged:   canvas.requestPaint()
@@ -324,6 +348,7 @@ WallpaperItem {
     onCurrentCharsChanged:   canvas.requestPaint()
     onTrailLengthChanged:    { canvas.initDrops(); canvas.requestPaint() }
     onTrailLengthMinChanged: { canvas.initDrops(); canvas.requestPaint() }
+    onFadeStepChanged:       canvas.requestPaint()
     onLeadHighlightChanged:  canvas.requestPaint()
     onGlowSizeChanged:       canvas.requestPaint()
     onBgColorChanged:        canvas.requestPaint()

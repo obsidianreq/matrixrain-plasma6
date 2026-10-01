@@ -1,28 +1,42 @@
 # Matrix-style Wallpaper for KDE Plasma 6
 
-Provides a Matrix-esque "code rainfall" background wallpaper for Plasma 6, with some fun custommizations.
+Provides a Matrix-esque "code rainfall" background wallpaper for Plasma 6, with some fun customizations.
 
 ![screenshot.png](screenshot.png)
 
 ## Features
 
-- Change font size
-- Choose between single color, or multi-color with pre-defined palettes
-- Customize drop speed
-- Jitter effect
-- Glitch chance for a random bright white characters
+- Font size and font family picker
+- Character sets: Katakana, ASCII, Binary, Braille, pictographs, Runic (any mix)
+- Single color, or multi-color with pre-defined palettes
+- Background color
+- Trail length (min/max per column) and fade step
+- Lead highlight (bright white head glyph) and GPU glow
+- Drop speed, variable per-column speed, jitter, restart delay
+- Direction: down, up, left or right
+- Column density and multiple drops per column
+- Glitch chance for random bright white characters
 
 ## Installation
 
-installation requires `kpackagetool6` which can be found on the `kpackage`
-package on arch based distros, `kpackagetool6` on Suse based distros, and
-`kf6-kpackage` on debian based distros.
+Installation requires `kpackagetool6`, which is in the `kpackage` package on
+Arch based distros, `kpackagetool6` on SUSE based distros, and `kf6-kpackage`
+on Debian based distros.
 
 ```bash
 git clone https://github.com/obsidianreq/matrixrain-plasma6.git
 cd matrixrain-plasma6
-kpackagetool6 --type Plasma/Wallpaper --install obsidianreq.plasma.wallpaper.matrixrain/
+./install.sh
 kquitapp6 plasmashell && kstart plasmashell
+```
+
+`install.sh` installs the package, or upgrades it if it is already installed.
+To do it by hand instead:
+
+```bash
+kpackagetool6 --type Plasma/Wallpaper --install obsidianreq.plasma.wallpaper.matrixrain/
+# or, when already installed:
+kpackagetool6 --type Plasma/Wallpaper --upgrade obsidianreq.plasma.wallpaper.matrixrain/
 ```
 
 Then open system settings and there will be a new option under wallpapers.

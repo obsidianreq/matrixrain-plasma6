@@ -11,6 +11,7 @@
     <Entry key="charSetMask" type="Int"><Default>1</Default></Entry>
     <Entry key="trailLength" type="Int"><Default>20</Default><Range min="2" max="60"/></Entry>
     <Entry key="trailLengthMin" type="Int"><Default>5</Default><Range min="2" max="60"/></Entry>
+    <Entry key="fadeStep" type="Int"><Default>10</Default><Range min="1" max="50"/></Entry>
     <Entry key="density" type="Int"><Default>100</Default><Range min="1" max="100"/></Entry>
     <Entry key="leadHighlight" type="Bool"><Default>false</Default></Entry>
     <Entry key="glowSize" type="Int"><Default>0</Default><Range min="0" max="30"/></Entry>

@@ -10,12 +10,15 @@ KirigamiLayouts.FormLayout {
     property alias cfg_fontSize:        fontSpin.value
     property alias cfg_speed:           speedSpin.value
     property alias cfg_colorMode:       modeCombo.currentIndex
-    property alias cfg_singleColor:     colorField.text
+    property string cfg_singleColor:    configuration.singleColor !== undefined ? configuration.singleColor : "#00ff00"
     property alias cfg_paletteIndex:    paletteCombo.currentIndex
-    property alias cfg_jitter:          jitterSpin.value
+    // Stored as 0.0-1.0; the SpinBox shows percent, so this is a plain
+    // property kept in the stored unit rather than an alias to the SpinBox.
+    property real  cfg_jitter:          configuration.jitter !== undefined ? configuration.jitter : 0
     property alias cfg_glitchChance:    glitchSpin.value
     property alias cfg_trailLength:     trailMaxSpin.value
     property alias cfg_trailLengthMin:  trailMinSpin.value
+    property alias cfg_fadeStep:        fadeStepSpin.value
     property alias cfg_density:         densitySpin.value
     property alias cfg_leadHighlight:   leadCheck.checked
     property alias cfg_glowSize:        glowSpin.value
@@ -23,7 +26,7 @@ KirigamiLayouts.FormLayout {
     property alias cfg_varSpeed:        varSpeedCheck.checked
     property alias cfg_dropsPerColumn:  dropsSpin.value
     property alias cfg_restartDelay:    restartSpin.value
-    property alias cfg_bgColor:         bgColorField.text
+    property string cfg_bgColor:        configuration.bgColor     !== undefined ? configuration.bgColor     : "#000000"
     property string cfg_fontFamily:     configuration.fontFamily  !== undefined ? configuration.fontFamily  : "monospace"
     property int    cfg_charSetMask:    configuration.charSetMask !== undefined ? configuration.charSetMask : 1
 
@@ -92,10 +95,16 @@ KirigamiLayouts.FormLayout {
         KirigamiLayouts.FormData.label: qsTr("Trail Max")
     }
     QC.SpinBox {
-        id: trailMinSpin; from: 2; to: 60; stepSize: 1
+        id: trailMinSpin; from: 2; to: trailMaxSpin.value; stepSize: 1
         value: configuration.trailLengthMin !== undefined ? configuration.trailLengthMin : 5
         onValueChanged: configuration.trailLengthMin = value
         KirigamiLayouts.FormData.label: qsTr("Trail Min")
+    }
+    QC.SpinBox {
+        id: fadeStepSpin; from: 1; to: 50; stepSize: 1
+        value: configuration.fadeStep !== undefined ? configuration.fadeStep : 10
+        onValueChanged: configuration.fadeStep = value
+        KirigamiLayouts.FormData.label: qsTr("Fade Step (%)")
     }
     QC.CheckBox {
         id: leadCheck
@@ -151,8 +160,9 @@ KirigamiLayouts.FormLayout {
         KirigamiLayouts.FormData.label: qsTr("Variable Speed")
     }
     QC.SpinBox {
-        id: jitterSpin; from: 0; to: 100; stepSize: 1; value: configuration.jitter * 100
-        onValueChanged: configuration.jitter = value / 100
+        id: jitterSpin; from: 0; to: 100; stepSize: 1
+        value: Math.round(cfg_jitter * 100)
+        onValueChanged: { cfg_jitter = value / 100; configuration.jitter = value / 100 }
         KirigamiLayouts.FormData.label: qsTr("Jitter (%)")
     }
 
@@ -165,8 +175,9 @@ KirigamiLayouts.FormLayout {
         KirigamiLayouts.FormData.label: qsTr("Color Mode")
     }
     QC.TextField {
-        id: colorField; text: configuration.singleColor
-        onTextChanged: configuration.singleColor = text
+        id: colorField; text: cfg_singleColor
+        validator: RegularExpressionValidator { regularExpression: /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/ }
+        onTextChanged: if (acceptableInput) { cfg_singleColor = text; configuration.singleColor = text }
         visible: modeCombo.currentIndex === 0
         KirigamiLayouts.FormData.label: qsTr("Single Color")
     }
@@ -188,8 +199,9 @@ KirigamiLayouts.FormLayout {
     }
     QC.TextField {
         id: bgColorField
-        text: configuration.bgColor !== undefined ? configuration.bgColor : "#000000"
-        onTextChanged: configuration.bgColor = text
+        text: cfg_bgColor
+        validator: RegularExpressionValidator { regularExpression: /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/ }
+        onTextChanged: if (acceptableInput) { cfg_bgColor = text; configuration.bgColor = text }
         KirigamiLayouts.FormData.label: qsTr("Background Color")
     }
     QC.Button {
